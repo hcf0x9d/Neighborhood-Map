@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Neighborhood Map</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://use.typekit.net/vlv4vtr.js"></script>
+    <script async defer>try{Typekit.load({ async: true });}catch(e){}</script>
+</head>
+<body>
+    <section class="map">
+
+        <main id="sidebar" class="map-sidebar">
+            <div class="venue-controls">
+                <h1 class="title">
+                    <span class="title-intro">Explore</span>
+                </h1>
+                <input class="search-box" type="text" data-bind="value: viewModel.locationSearch">
+                <ul class="category-list" data-bind="foreach: viewModel.categories">
+                    <li class="category-item">
+                        <input type="checkbox" data-bind="value: id(), attr: {name: id(), id: id()}, checked: viewModel.associatedItemIds, click: viewController.toggleAssociation" />
+                        <label data-bind="text: name(), attr: {for: id()}"></label>
+                    </li>
+                </ul>
+            </div>
+
+            <ul class="venue-list" data-bind="foreach: viewModel.availableItems()">
+                <li class="venue-item" data-bind="attr: {id: id}, click: sideBar.click, setFocus: {}">
+                    <span class="venue-item-target">
+                        <img class="venue-item-icon" src="" alt="" data-bind="attr: {src: img}">
+                        <label class="venue-item-label">
+                            <span data-bind="text: name"></span>
+                            <span class="venue-item-label-helper" data-bind="text: type.name"></span>
+                        </label>
+                    </span>
+                    <div class="venue-detail" data-bind="with: details(), visible: isSelected">
+                        <p class="venue-detail-description" data-bind="text: description"></p>
+                        <div class="venue-detail-stats">
+                            <p class="" data-bind="html: address"></p>
+                            <p data-bind="html: phone"></p>
+                            <span data-bind="if: open.isOpen">
+                                <p data-bind="text: open.openStatus"></p>
+                            </span>
+                        </div>
+                        <p data-bind="if: url">
+                            <a href="" data-bind="attr: {href: url.url}, text: url.url"></a>
+                        </p>
+
+                    </div>
+                </li>
+            </ul>
+        </main>
+        <div id="map" class="map-container"></div>
+
+    </section>
+
+    <script src="js/lib/knockout-3.4.0.js"></script>
+    <script src="js/app.js"></script>
+
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBSCuetIxeeLbIB3D8cpS93Cg8815CUrF4&v=3&callback=mapControl.init"></script>
+</body>
+</html>
