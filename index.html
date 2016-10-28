@@ -3,13 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <title>Neighborhood Map</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="css/style.css">
     <script src="https://use.typekit.net/vlv4vtr.js"></script>
     <script async defer>try{Typekit.load({ async: true });}catch(e){}</script>
 </head>
 <body>
     <section class="map">
-
+        <div class="mobile-menu-launch">
+            <div id="nav-icon3" class="visible-sm visible-xs">
+              <span></span>
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+        </div>
         <main id="sidebar" class="map-sidebar">
             <div class="venue-controls">
                 <h1 class="title">
@@ -25,7 +33,7 @@
             </div>
 
             <ul class="venue-list" data-bind="foreach: viewModel.availableItems()">
-                <li class="venue-item" data-bind="attr: {id: id}, click: sideBar.click, setFocus: {}">
+                <li class="venue-item" data-bind="attr: {id: id}, click: sideBar.click, setFocus: {}, visible: visible">
                     <span class="venue-item-target">
                         <img class="venue-item-icon" src="" alt="" data-bind="attr: {src: img}">
                         <label class="venue-item-label">
