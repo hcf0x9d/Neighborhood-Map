@@ -26,6 +26,10 @@ var config      = {
     "js": {
         "source": "js/*",
         "target": "/js"
+    },
+    "jsLib": {
+      "source": "js/lib/*",
+      "target": "/js/lib"
     }
   },
     site        = '',
@@ -40,9 +44,9 @@ gulp.task('css', function () {
 
 gulp.task('html', function () {
   return gulp.src(config.html.source)
-  .pipe(inline())
+  //.pipe(inline())
   .pipe(htmlmin({collapseWhitespace: true}))
-  .pipe(minline())
+  //.pipe(minline())
   .pipe(gulp.dest(config.build + config.html.target));
 });
 
@@ -52,7 +56,13 @@ gulp.task('js', function () {
   .pipe(gulp.dest(config.build + config.js.target));
 });
 
-gulp.task('build', ['html','css','js']);
+gulp.task('jsLib', function () {
+  return gulp.src(config.jsLib.source)
+  // .pipe(uglify())
+  .pipe(gulp.dest(config.build + config.jsLib.target));
+});
+
+gulp.task('build', ['html','css','js','jsLib']);
 
 gulp.task('ngrok-url', function(cb) {
   return ngrok.connect(portVal, function (err, url) {
@@ -107,13 +117,13 @@ gulp.task('serve', function() {
   browserSync({
     notify: false,
     // Customize the BrowserSync console logging prefix
-    logPrefix: 'WSK',
+    logPrefix: 'NM',
     // Run as an https by uncommenting 'https: true'
     // Note: this uses an unsigned certificate which on first access
     //       will present a certificate warning in the browser.
     // https: true,
     server: {
-      baseDir: "./"
+      baseDir: "dist/"
     }
   });
 

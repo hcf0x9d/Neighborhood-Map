@@ -1,9 +1,26 @@
 /**
- * The brains of the project
+ * The "brains" of the project
  *
  * Built on Knockout.js
  */
 
+window.onload = function () {
+    var menuLaunch = document.getElementById('burger');
+    var sidebar = document.getElementById('sidebar');
+
+    menuLaunch.addEventListener('click', toggleOpen);
+
+
+    function toggleOpen() {
+        if (menuLaunch.className.split(' ').indexOf('is-active') >= 0) {
+            menuLaunch.className = menuLaunch.className.replace(' is-active', '');
+            sidebar.className = sidebar.className.replace(' open', '');
+        } else {
+            menuLaunch.className += ' is-active';
+            sidebar.className += ' open';
+        }
+    }
+};
 
 function CategoryItem(name, id) {
     var self = this;
@@ -13,12 +30,13 @@ function CategoryItem(name, id) {
     self.selected = ko.observable(false);
 }
 
-var Venue = function (data) {
+var Venue = function (data, category) {
     var self = this;
 
     self.id = data.id;
-    self.loc = {lat: data.location.lat, lng: data.location.lng},
+    self.loc = {lat: data.location.lat, lng: data.location.lng};
     self.name = data.name;
+    self.group = category;
     if (data.categories.length !== 0) {
         self.type = data.categories[0];
     } else {
@@ -32,6 +50,7 @@ var Venue = function (data) {
         self.img = '';
     }
     self.details = '';
+
 };
 
 var VenueDetail = function (data) {
@@ -41,12 +60,8 @@ var VenueDetail = function (data) {
     self.phone = data.contact.formattedPhone;
     self.description = data.description;
     if (data.hours !== undefined) {
-        self.open = {isOpen: data.hours.isOpen, openStatus: data.hours.status};
+        self.openStatus = data.hours.status;
     }
-    if (data.page !== undefined) {
-        self.url = data.page.pageInfo.links.items[0]; // access .url
-    }
-
 };
 
 var viewModel = {
@@ -58,7 +73,10 @@ var viewModel = {
     epicenter:          [47.56732,-122.632936],
     markersArray:       ko.observableArray([]),
     availableItems:     ko.observableArray([]),
+    venueMap:           {}
 };
+
+// 34234234: [1,2,3],
 
 var infowindow;
 var viewController = {
@@ -77,24 +95,47 @@ var viewController = {
         item.selected(!(item.selected()));
         return true;
     },
-    updateVenues: function () {
-        var cats = '';
+    getVenueCategories: function () {
+        var url = 'https://api.foursquare.com/v2/venues/categories?client_id=I3N0JYKWCC5KANL2OJDPYSNSAULNFRT021AQXCI2IBDY31S2&client_secret=F225UYTYIO0T2QKMRQW1AF5UFN4GJELFL4133KQPLJJ43F45&v=20130815';
+        var xhr = new XMLHttpRequest();
+        xhr.onreadystatechange = function() {
 
-        for (var i = viewModel.filteredList().length - 1; i >= 0; i--) {
-            cats += viewModel.filteredList()[i] + ',';
-        }
+            if (xhr.readyState == XMLHttpRequest.DONE) {
+                obj = JSON.parse(xhr.responseText);
+
+                if (obj.meta.code === 200) {
+                    obj.response.categories.forEach(function (categoryObj) {
+                    });
+
+                } else {
+                    alert('We couldn\'t get the categories for the venues.  Try again later');
+                    console.log(':: ERROR :: ', obj.statusText);
+                }
+            }
+        };
+
+        // "4bf58dd8d48988d17f941735"
+        // "4d4b7105d754a06374d81259"
+        xhr.open('GET', url, true);
+        xhr.send(null);
+    },
+    getVenues: function () {
+        var cats = '';
 
         var url = {
             base: 'https://api.foursquare.com/v2/venues/search?client_id=I3N0JYKWCC5KANL2OJDPYSNSAULNFRT021AQXCI2IBDY31S2&client_secret=F225UYTYIO0T2QKMRQW1AF5UFN4GJELFL4133KQPLJJ43F45&v=20130815&ll=',
             client: viewModel.epicenter.join(','),
-            opts: '&radius=1000&intent=browse&categoryId=' + cats
+            opts: '&radius=1000&intent=browse&categoryId='
         };
 
+        for (var i = viewModel.categories().length - 1; i >= 0; i--) {
+            var fullUrl = url.base + url.client + url.opts + viewModel.categories()[i].id();
+            viewController.api(fullUrl, viewModel.categories()[i].id());
+        }
+
+    },
+    api: function (fullUrl, category) {
         var obj = null;
-
-        var fullUrl = function() {
-            return url.base + url.client + url.opts;
-        };
 
 
         var xhr = new XMLHttpRequest();
@@ -103,45 +144,74 @@ var viewController = {
             if (xhr.readyState == XMLHttpRequest.DONE) {
                 obj = JSON.parse(xhr.responseText);
 
-                viewModel.availableItems([]);
-
                 if (obj.meta.code === 200) {
                     obj.response.venues.forEach(function (venueItem) {
-                        var t = new Venue(venueItem);
+                        var t = new Venue(venueItem, category);
                         t.details = ko.observable();
                         t.isSelected = ko.observable(false);
+                        t.visible = ko.observable(true);
+
                         viewModel.availableItems.push(t);
                     });
                     mapControl.update();
+                } else {
+                    alert('We couldn\'t get the venues.  Try again later');
+                    console.log(':: ERROR :: ', obj.statusText);
                 }
 
             }
         };
-        xhr.open('GET', fullUrl(), true);
+
+        // "4bf58dd8d48988d17f941735"
+        // "4d4b7105d754a06374d81259"
+        xhr.open('GET', fullUrl, true);
         xhr.send(null);
+    },
+    updateVenues: function () {
+        if (viewModel.filteredList().length > 0) {
+            for (var i = viewModel.markersArray().length - 1; i >= 0; i--) {
+
+                if (viewModel.filteredList().indexOf(viewModel.markersArray()[i].group) >= 0) {
+                    viewModel.markersArray()[i].setVisible(true);
+                    viewModel.availableItems()[i].visible(true);
+
+                } else {
+                    viewModel.markersArray()[i].setVisible(false);
+                    viewModel.availableItems()[i].visible(false);
+                }
+            }
+        } else {
+            viewModel.markersArray().forEach(function (v, i) {
+                viewModel.markersArray()[i].setVisible(true);
+                viewModel.availableItems()[i].visible(true);
+            });
+        }
+
+
     },
     venueDetail: function (idx) {
         if (infowindow !== undefined) {
             infowindow.close();
         }
-        infowindow = new google.maps.InfoWindow({
-            content: viewModel.availableItems()[idx].name
-        });
-
-        infowindow.open(map, viewModel.markersArray()[idx]);
 
         if (viewModel.availableItems()[idx].details() === undefined) {
             url = 'https://api.foursquare.com/v2/venues/' + viewModel.availableItems()[idx].id + '?client_id=I3N0JYKWCC5KANL2OJDPYSNSAULNFRT021AQXCI2IBDY31S2&client_secret=F225UYTYIO0T2QKMRQW1AF5UFN4GJELFL4133KQPLJJ43F45&v=20130815';
             var xhr = new XMLHttpRequest();
             xhr.onreadystatechange = function() {
-
+                // TODO: Use map object grouping to handle the filters
                 if (xhr.readyState == XMLHttpRequest.DONE) {
                     obj = JSON.parse(xhr.responseText);
 
                     if (obj.meta.code === 200) {
+                        var infowindowContent = '';
+
                         viewModel.availableItems()[idx].details(new VenueDetail(obj.response.venue));
 
                         sideBar.showDetail(idx);
+
+                    } else {
+                        alert('We couldn\'t get the details of this venue.  Try again later');
+                        console.log(':: ERROR :: ', obj.statusText);
                     }
 
                     var list = document.getElementById('venue-list');
@@ -178,11 +248,37 @@ var sideBar = {
 
     },
     showDetail: function (idx) {
-        viewModel.availableItems().forEach(function (item) {
-            item.isSelected(false);
+        var infowindowContent = '';
+        var sidebarItems = document.getElementsByClassName('venue-item');
+
+        for (var i = sidebarItems.length - 1; i >= 0; i--) {
+            sidebarItems[i].className = sidebarItems[i].className.replace(' is-active', '');
+        }
+
+        for(var index in viewModel.availableItems()[idx].details()) {
+
+           if (viewModel.availableItems()[idx].details().hasOwnProperty(index)) {
+               var attr = viewModel.availableItems()[idx].details()[index];
+               if (attr !== undefined) {
+                    infowindowContent += '<p>' + attr + '</p>';
+               }
+           }
+        }
+
+        infowindow = new google.maps.InfoWindow({
+            content: '<h2 class="infowindow-title">' + viewModel.availableItems()[idx].name + '</h2>' + infowindowContent,
+            maxWidth: 300
         });
-        viewModel.availableItems()[idx].isSelected(true);
+
+        infowindow.open(map, viewModel.markersArray()[idx]);
+
+        // viewModel.availableItems().forEach(function (item) {
+        //     // item.isSelected(false);
+        // });
+        // viewModel.availableItems()[idx].isSelected(true);
         document.getElementById(viewModel.availableItems()[idx].id).scrollIntoView();
+        document.getElementById(viewModel.availableItems()[idx].id).className += ' is-active';
+
         // console.log(viewModel.availableItems()[idx].id);
     }
 };
@@ -195,10 +291,10 @@ var mapControl = {
 
         map = new google.maps.Map(document.getElementById('map'), {
             center: mapLatLng,
-            zoom: 16
+            zoom: 15
         });
         geocoder = new google.maps.Geocoder();
-        viewController.updateVenues();
+        viewController.getVenues();
 
     },
 
@@ -217,9 +313,9 @@ var mapControl = {
             marker = new google.maps.Marker({
                 position:   {lat: parseFloat(data.loc.lat), lng: parseFloat(data.loc.lng)},
                 map:        map,
-                title:      data.name
+                title:      data.name,
+                group:      data.group
             });
-
             viewModel.markersArray().push(marker);
 
             google.maps.event.addListener(marker, 'click', function(){
