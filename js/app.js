@@ -1,21 +1,22 @@
 /**
- * The brains of the project
+ * The "brains" of the project
  *
  * Built on Knockout.js
  */
 
 window.onload = function () {
-    var menuLaunch = document.getElementById('nav-icon3');
+    var menuLaunch = document.getElementById('burger');
     var sidebar = document.getElementById('sidebar');
 
     menuLaunch.addEventListener('click', toggleOpen);
 
+
     function toggleOpen() {
-        if (menuLaunch.className.split(' ').indexOf('open') >= 0) {
-            menuLaunch.className = menuLaunch.className.replace(' open', '');
+        if (menuLaunch.className.split(' ').indexOf('is-active') >= 0) {
+            menuLaunch.className = menuLaunch.className.replace(' is-active', '');
             sidebar.className = sidebar.className.replace(' open', '');
         } else {
-            menuLaunch.className += ' open';
+            menuLaunch.className += ' is-active';
             sidebar.className += ' open';
         }
     }
@@ -61,8 +62,6 @@ var VenueDetail = function (data) {
     if (data.hours !== undefined) {
         self.openStatus = data.hours.status;
     }
-
-
 };
 
 var viewModel = {
@@ -253,6 +252,11 @@ var sideBar = {
     },
     showDetail: function (idx) {
         var infowindowContent = '';
+        var sidebarItems = document.getElementsByClassName('venue-item');
+
+        for (var i = sidebarItems.length - 1; i >= 0; i--) {
+            sidebarItems[i].className = sidebarItems[i].className.replace(' is-active', '');
+        }
 
         for(var index in viewModel.availableItems()[idx].details()) {
 
@@ -271,11 +275,13 @@ var sideBar = {
 
         infowindow.open(map, viewModel.markersArray()[idx]);
 
-        viewModel.availableItems().forEach(function (item) {
-            // item.isSelected(false);
-        });
+        // viewModel.availableItems().forEach(function (item) {
+        //     // item.isSelected(false);
+        // });
         // viewModel.availableItems()[idx].isSelected(true);
         document.getElementById(viewModel.availableItems()[idx].id).scrollIntoView();
+        document.getElementById(viewModel.availableItems()[idx].id).className += ' is-active';
+
         // console.log(viewModel.availableItems()[idx].id);
     }
 };
