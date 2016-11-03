@@ -103,20 +103,14 @@ var viewController = {
             if (xhr.readyState == XMLHttpRequest.DONE) {
                 obj = JSON.parse(xhr.responseText);
 
-                if (obj.meta.code >= 200 && obj.meta.code < 300) {
+                if (obj.meta.code === 200) {
                     obj.response.categories.forEach(function (categoryObj) {
-
-                        // var t = new Venue(venueItem);
-                        // t.details = ko.observable();
-                        // t.isSelected = ko.observable(false);
-                        // viewModel.availableItems.push(t);
                     });
-                    // mapControl.update();
 
                 } else {
-                    return 'error';
+                    alert('We couldn\'t get the categories for the venues.  Try again later');
+                    console.log(':: ERROR :: ', obj.statusText);
                 }
-
             }
         };
 
@@ -150,7 +144,7 @@ var viewController = {
             if (xhr.readyState == XMLHttpRequest.DONE) {
                 obj = JSON.parse(xhr.responseText);
 
-                if (obj.meta.code >= 200 && obj.meta.code < 300) {
+                if (obj.meta.code === 200) {
                     obj.response.venues.forEach(function (venueItem) {
                         var t = new Venue(venueItem, category);
                         t.details = ko.observable();
@@ -161,7 +155,8 @@ var viewController = {
                     });
                     mapControl.update();
                 } else {
-                    return 'error';
+                    alert('We couldn\'t get the venues.  Try again later');
+                    console.log(':: ERROR :: ', obj.statusText);
                 }
 
             }
@@ -214,7 +209,9 @@ var viewController = {
 
                         sideBar.showDetail(idx);
 
-
+                    } else {
+                        alert('We couldn\'t get the details of this venue.  Try again later');
+                        console.log(':: ERROR :: ', obj.statusText);
                     }
 
                     var list = document.getElementById('venue-list');
