@@ -5,7 +5,7 @@
     <title>Neighborhood Map</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="css/style.css">
-    <script src="https://use.typekit.net/vlv4vtr.js"></script>
+    <script async defer src="https://use.typekit.net/vlv4vtr.js"></script>
     <script async defer>try{Typekit.load({ async: true });}catch(e){}</script>
 </head>
 <body>
@@ -60,8 +60,15 @@
     </section>
 
     <script src="js/lib/knockout-3.4.0.js"></script>
+    <script src="js/lib/jquery-1.8.2.min.js"></script>
+
     <script src="js/app.js"></script>
 
-    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBSCuetIxeeLbIB3D8cpS93Cg8815CUrF4&v=3&callback=mapControl.init"></script>
+    <script
+        async
+        defer
+        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBSCuetIxeeLbIB3D8cpS93Cg8815CUrF4&v=3&callback=mapControl.init"
+        onerror="viewController.googleError();">
+    </script>
 </body>
 </html>

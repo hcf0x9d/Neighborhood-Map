@@ -50,6 +50,7 @@ var Venue = function (data, category) {
         self.img = '';
     }
     self.details = '';
+    self.marker = '';
 
 };
 
@@ -71,7 +72,6 @@ var viewModel = {
     locationSearch:     ko.observable('Bremerton'),
     cityName:           ko.observable(),
     epicenter:          [47.56732,-122.632936],
-    markersArray:       ko.observableArray([]),
     availableItems:     ko.observableArray([]),
     venueMap:           {}
 };
@@ -95,30 +95,6 @@ var viewController = {
         item.selected(!(item.selected()));
         return true;
     },
-    getVenueCategories: function () {
-        var url = 'https://api.foursquare.com/v2/venues/categories?client_id=I3N0JYKWCC5KANL2OJDPYSNSAULNFRT021AQXCI2IBDY31S2&client_secret=F225UYTYIO0T2QKMRQW1AF5UFN4GJELFL4133KQPLJJ43F45&v=20130815';
-        var xhr = new XMLHttpRequest();
-        xhr.onreadystatechange = function() {
-
-            if (xhr.readyState == XMLHttpRequest.DONE) {
-                obj = JSON.parse(xhr.responseText);
-
-                if (obj.meta.code === 200) {
-                    obj.response.categories.forEach(function (categoryObj) {
-                    });
-
-                } else {
-                    alert('We couldn\'t get the categories for the venues.  Try again later');
-                    console.log(':: ERROR :: ', obj.statusText);
-                }
-            }
-        };
-
-        // "4bf58dd8d48988d17f941735"
-        // "4d4b7105d754a06374d81259"
-        xhr.open('GET', url, true);
-        xhr.send(null);
-    },
     getVenues: function () {
         var cats = '';
 
@@ -134,95 +110,89 @@ var viewController = {
         }
 
     },
+    googleError: function () {
+        alert('Google Ran into a problem');
+    },
     api: function (fullUrl, category) {
-        var obj = null;
 
+        $.ajax(fullUrl)
+            .done(function (obj) {
+                obj.response.venues.forEach(function (venueItem) {
+                    var t = new Venue(venueItem, category);
+                    t.details = ko.observable();
+                    t.isSelected = ko.observable(false);
+                    t.visible = ko.observable(true);
 
-        var xhr = new XMLHttpRequest();
-        xhr.onreadystatechange = function() {
-
-            if (xhr.readyState == XMLHttpRequest.DONE) {
-                obj = JSON.parse(xhr.responseText);
-
-                if (obj.meta.code === 200) {
-                    obj.response.venues.forEach(function (venueItem) {
-                        var t = new Venue(venueItem, category);
-                        t.details = ko.observable();
-                        t.isSelected = ko.observable(false);
-                        t.visible = ko.observable(true);
-
-                        viewModel.availableItems.push(t);
+                    var marker = new google.maps.Marker({
+                        position:   {lat: parseFloat(venueItem.location.lat), lng: parseFloat(venueItem.location.lng)},
+                        map:        map,
+                        title:      venueItem.name,
+                        group:      category
                     });
-                    mapControl.update();
-                } else {
-                    alert('We couldn\'t get the venues.  Try again later');
-                    console.log(':: ERROR :: ', obj.statusText);
-                }
 
-            }
-        };
 
-        // "4bf58dd8d48988d17f941735"
-        // "4d4b7105d754a06374d81259"
-        xhr.open('GET', fullUrl, true);
-        xhr.send(null);
+                    google.maps.event.addListener(marker, 'click', function(){
+
+                        viewController.venueDetail(t);
+                        mapControl.toggleBounce(t);
+                    });
+
+                    t.marker = marker;
+
+
+                    viewModel.availableItems.push(t);
+                });
+                // mapControl.update();
+            })
+            .fail(function (obj) {
+                alert('We couldn\'t get the venues.  Try again later');
+                console.log(':: ERROR :: ', obj);
+        });
+
     },
     updateVenues: function () {
         if (viewModel.filteredList().length > 0) {
-            for (var i = viewModel.markersArray().length - 1; i >= 0; i--) {
+            for (var i = viewModel.availableItems().length - 1; i >= 0; i--) {
+                if (viewModel.filteredList().indexOf(viewModel.availableItems()[i].group) >= 0) {
 
-                if (viewModel.filteredList().indexOf(viewModel.markersArray()[i].group) >= 0) {
-                    viewModel.markersArray()[i].setVisible(true);
+                    viewModel.availableItems()[i].marker.setVisible(true);
                     viewModel.availableItems()[i].visible(true);
 
                 } else {
-                    viewModel.markersArray()[i].setVisible(false);
+                    viewModel.availableItems()[i].marker.setVisible(false);
                     viewModel.availableItems()[i].visible(false);
                 }
             }
         } else {
-            viewModel.markersArray().forEach(function (v, i) {
-                viewModel.markersArray()[i].setVisible(true);
+            viewModel.availableItems().forEach(function (v, i) {
+                viewModel.availableItems()[i].marker.setVisible(true);
                 viewModel.availableItems()[i].visible(true);
             });
         }
 
 
     },
-    venueDetail: function (idx) {
+    venueDetail: function (venue) {
         if (infowindow !== undefined) {
             infowindow.close();
         }
 
-        if (viewModel.availableItems()[idx].details() === undefined) {
-            url = 'https://api.foursquare.com/v2/venues/' + viewModel.availableItems()[idx].id + '?client_id=I3N0JYKWCC5KANL2OJDPYSNSAULNFRT021AQXCI2IBDY31S2&client_secret=F225UYTYIO0T2QKMRQW1AF5UFN4GJELFL4133KQPLJJ43F45&v=20130815';
-            var xhr = new XMLHttpRequest();
-            xhr.onreadystatechange = function() {
-                // TODO: Use map object grouping to handle the filters
-                if (xhr.readyState == XMLHttpRequest.DONE) {
-                    obj = JSON.parse(xhr.responseText);
+        if (venue.details() === undefined) {
+            url = 'https://api.foursquare.com/v2/venues/' + venue.id + '?client_id=I3N0JYKWCC5KANL2OJDPYSNSAULNFRT021AQXCI2IBDY31S2&client_secret=F225UYTYIO0T2QKMRQW1AF5UFN4GJELFL4133KQPLJJ43F45&v=20130815';
 
-                    if (obj.meta.code === 200) {
-                        var infowindowContent = '';
+            $.ajax(url)
+                .done(function (obj) {
+                    var infowindowContent = '';
+                    venue.details(new VenueDetail(obj.response.venue));
+                    sideBar.showDetail(venue);
+                })
+                .fail(function (obj) {
+                    alert('We couldn\'t get the details of this venue.  Try again later');
+                    console.log(':: ERROR :: ', obj);
+            });
 
-                        viewModel.availableItems()[idx].details(new VenueDetail(obj.response.venue));
-
-                        sideBar.showDetail(idx);
-
-                    } else {
-                        alert('We couldn\'t get the details of this venue.  Try again later');
-                        console.log(':: ERROR :: ', obj.statusText);
-                    }
-
-                    var list = document.getElementById('venue-list');
-
-
-                }
-            };
-            xhr.open('GET', url, true);
-            xhr.send(null);
         } else {
-            sideBar.showDetail(idx);
+            sideBar.showDetail(venue);
         }
 
 
@@ -232,22 +202,16 @@ var viewController = {
 };
 
 var sideBar = {
-    update: function () {
-
-        for (var i = 0; i < viewModel.availableItems().length; i++) {
-
-            // console.log(viewModel.availableItems()[i].id);
-        }
-    },
     click: function () {
         var idx = viewModel.availableItems().indexOf(this);
         if (infowindow !== undefined) {
             infowindow.close();
         }
-        viewController.venueDetail(idx);
+        viewController.venueDetail(viewModel.availableItems()[idx]);
+        mapControl.toggleBounce(viewModel.availableItems()[idx]);
 
     },
-    showDetail: function (idx) {
+    showDetail: function (venue) {
         var infowindowContent = '';
         var sidebarItems = document.getElementsByClassName('venue-item');
 
@@ -255,10 +219,10 @@ var sideBar = {
             sidebarItems[i].className = sidebarItems[i].className.replace(' is-active', '');
         }
 
-        for(var index in viewModel.availableItems()[idx].details()) {
+        for(var index in venue.details()) {
 
-           if (viewModel.availableItems()[idx].details().hasOwnProperty(index)) {
-               var attr = viewModel.availableItems()[idx].details()[index];
+           if (venue.details().hasOwnProperty(index)) {
+               var attr = venue.details()[index];
                if (attr !== undefined) {
                     infowindowContent += '<p>' + attr + '</p>';
                }
@@ -266,20 +230,14 @@ var sideBar = {
         }
 
         infowindow = new google.maps.InfoWindow({
-            content: '<h2 class="infowindow-title">' + viewModel.availableItems()[idx].name + '</h2>' + infowindowContent,
+            content: '<h2 class="infowindow-title">' + venue.name + '</h2>' + infowindowContent,
             maxWidth: 300
         });
 
-        infowindow.open(map, viewModel.markersArray()[idx]);
+        infowindow.open(map, venue.marker);
 
-        // viewModel.availableItems().forEach(function (item) {
-        //     // item.isSelected(false);
-        // });
-        // viewModel.availableItems()[idx].isSelected(true);
-        document.getElementById(viewModel.availableItems()[idx].id).scrollIntoView();
-        document.getElementById(viewModel.availableItems()[idx].id).className += ' is-active';
-
-        // console.log(viewModel.availableItems()[idx].id);
+        document.getElementById(venue.id).scrollIntoView();
+        document.getElementById(venue.id).className += ' is-active';
     }
 };
 
@@ -300,14 +258,6 @@ var mapControl = {
 
     update: function () {
         var marker;
-        google.maps.Map.prototype.clearOverlays = function() {
-          for (var i = 0; i < viewModel.markersArray().length; i++ ) {
-            viewModel.markersArray()[i].setMap(null);
-          }
-          viewModel.markersArray([]);
-        };
-
-        map.clearOverlays();
 
         viewModel.availableItems().forEach(function (data, i) {
             marker = new google.maps.Marker({
@@ -316,17 +266,22 @@ var mapControl = {
                 title:      data.name,
                 group:      data.group
             });
-            viewModel.markersArray().push(marker);
+
+            viewModel.availableItems()[i].marker = marker;
 
             google.maps.event.addListener(marker, 'click', function(){
                 viewController.venueDetail(i);
+                mapControl.toggleBounce(i);
             });
         });
 
-        sideBar.update();
-
     },
-
+    toggleBounce: function (venue) {
+        venue.marker.setAnimation(google.maps.Animation.BOUNCE);
+        setTimeout(function(){
+            venue.marker.setAnimation(null);
+        }, 750);
+    },
     search: function (value) {
 
         geocoder.geocode( {address: value}, function(results, status) {

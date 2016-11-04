@@ -62,7 +62,7 @@ gulp.task('jsLib', function () {
   .pipe(gulp.dest(config.build + config.jsLib.target));
 });
 
-gulp.task('build', ['html','css','js','jsLib']);
+gulp.task('build', ['html','css','js','jsLib', 'serve']);
 
 gulp.task('ngrok-url', function(cb) {
   return ngrok.connect(portVal, function (err, url) {
@@ -123,7 +123,7 @@ gulp.task('serve', function() {
     //       will present a certificate warning in the browser.
     // https: true,
     server: {
-      baseDir: "dist/"
+      baseDir: "./"
     }
   });
 

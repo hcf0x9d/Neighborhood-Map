@@ -97,6 +97,16 @@ var viewController = {
     },
     getVenueCategories: function () {
         var url = 'https://api.foursquare.com/v2/venues/categories?client_id=I3N0JYKWCC5KANL2OJDPYSNSAULNFRT021AQXCI2IBDY31S2&client_secret=F225UYTYIO0T2QKMRQW1AF5UFN4GJELFL4133KQPLJJ43F45&v=20130815';
+
+        $.ajax( {
+            url: url,
+            done: function (response) {
+                console.log('win');
+            },
+            fail: function (response) {
+                console.log('error');
+            }
+        });
         var xhr = new XMLHttpRequest();
         xhr.onreadystatechange = function() {
 
@@ -134,9 +144,21 @@ var viewController = {
         }
 
     },
+    googleError: function () {
+        alert('Google Ran into a problem');
+    },
     api: function (fullUrl, category) {
         var obj = null;
 
+        $.ajax( {
+            url: url,
+            done: function (response) {
+                console.log('win');
+            },
+            fail: function (response) {
+                console.log('error');
+            }
+        });
 
         var xhr = new XMLHttpRequest();
         xhr.onreadystatechange = function() {
